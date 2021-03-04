@@ -1,18 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace WPFStore
 {
@@ -20,10 +13,10 @@ namespace WPFStore
     {
         public class Product //Data for products
         {
-            public string ID;
-            public string Name;
-            public string Description;
-            public decimal Price;
+            public string ID { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
+            public decimal Price { get; set; }
 
             public Product(string id, string name, string description, decimal price)
             {
@@ -33,36 +26,43 @@ namespace WPFStore
                 Price = price;
             }
         }
-        public class Cart //Data for cartItems and cart
+        public class CartObject //Data for cartItems and cart
         {
             //public string ID;
-            public string Name;
-            public string Description;
-            public decimal Price;
-            public int Quantity;
+            public string Name { get; set; }
+            public string Description { get; set; }
+            public decimal Price { get; set; }
+            public int Quantity { get; set; }
+            public decimal PriceEach { get; set; }
 
-            public Cart(string name, string description, decimal price, int quantity)
+            public CartObject(string name, string description, decimal price, int quantity, decimal priceEach)
             {
                 //ID = id;
                 Name = name;
                 Description = description;
                 Price = price;
                 Quantity = quantity;
+                PriceEach = priceEach;  
                
             }
         }
         //instance variables
         public List<Product> products = new List<Product>(); //used in STORE
-        public List<Cart> carts = new List<Cart>(); //used in CART (to save carts)
-        public List<Cart> currentCart = new List<Cart>(); //used in CART (contains items for current cart)
+        public List<CartObject> carts = new List<CartObject>(); //used in CART (to save carts)
+        public List<CartObject> currentCart = new List<CartObject>(); //used in CART (contains items for current cart)
         public WrapPanel gallery; //used in STORE (shows productgallery)
         public Button pixButton, addToCart, deleteCartItem, addCartItemQuantity, removeCartItemQuantity; //pixbutton and addToCart in STORE, others in CART
+        public Button loadSavedCarts, saveCurrentCart, clearCurrentCart, checkout; //final cartbuttons
         public Label productInfo, quantity, price, totalCartPriceLabel ; //used in STORE
         public Grid cartItemsGrid; //used in CART. Grid that build the pseudo-datagrid of the cart
         public StackPanel cartPanel; //used in CART. Container for above grids.
         public List<string> productNamesForComparison = new List<string>();
         public decimal totalCartPrice = 0;
         public TextBox discountCodeBox;
+        public string cartPath = @"c:\Windows\Temp\VS_PS5Cart.txt";
+        public string codeUsed;
+        public List<Label> cartItemQuantiyLabelList = new List<Label>();
+        public List<Label> cartItemPriceLabelList = new List<Label>();
         //public int counter = 0;
         //public int cartItemQuantity = 1;
 
@@ -296,6 +296,8 @@ namespace WPFStore
             Grid.SetColumn(discountCodeBox, 2);
             Grid.SetRow(discountCodeBox, 2);
 
+            discountCodeBox.KeyDown += DiscountCodeBox_KeyDown;
+
 
             totalCartPriceLabel = new Label
             {
@@ -309,22 +311,194 @@ namespace WPFStore
             Grid.SetColumn(totalCartPriceLabel, 3);
             Grid.SetRow(totalCartPriceLabel, 3);
 
+            loadSavedCarts = new Button
+            {
+                Content = "Load Cart",
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            cartGrid.Children.Add(loadSavedCarts);
+            Grid.SetColumn(loadSavedCarts, 0);
+            Grid.SetRow(loadSavedCarts, 4);
 
-            
+            loadSavedCarts.Click += LoadSavedCarts_Click;
+
+            saveCurrentCart = new Button
+            {
+                Content = "Save Cart",
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            cartGrid.Children.Add(saveCurrentCart);
+            Grid.SetColumn(saveCurrentCart, 1);
+            Grid.SetRow(saveCurrentCart, 4);
+
+            saveCurrentCart.Click += SaveCurrentCart_Click;
+
+            clearCurrentCart = new Button
+            {
+                Content = "Clear Cart",
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            cartGrid.Children.Add(clearCurrentCart);
+            Grid.SetColumn(clearCurrentCart, 2);
+            Grid.SetRow(clearCurrentCart, 4);
+
+            clearCurrentCart.Click += ClearCurrentCart_Click;
+
+            checkout = new Button
+            {
+                Content = "CHECKOUT",
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                Width = 150,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            cartGrid.Children.Add(checkout);
+            Grid.SetColumn(checkout, 3);
+            Grid.SetColumnSpan(checkout, 2);
+            Grid.SetRow(checkout, 4);
+
+            checkout.Click += Checkout_Click;
+
+
+
+
             #endregion
         }
-       
+
+        private void DiscountCodeBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            string codesPath = @"c:\Windows\Temp\VS_PS5DiscountCodes.txt";
+            string[] codes = File.ReadAllLines(codesPath);
+            TextBox txb = (TextBox)sender;
+
+            if (e.Key == System.Windows.Input.Key.Enter && sender is TextBox)
+            {
+                for (int i = 0; i < codes.Length; i++)
+                {
+                    if (txb.Text.ToLower() == codes[0].ToLower())
+                    {
+                        CartObject codeToCart = new CartObject("Good Deal", "10% Off!", totalCartPrice * (decimal)0.9 - totalCartPrice, 1, 0);
+                        currentCart.Add(codeToCart);
+                        CreateCartItemsGrid(codeToCart);
+                        totalCartPriceLabel.Content = totalCartPrice * (decimal)0.9;
+                        discountCodeBox.IsReadOnly = true;
+                        codeUsed = codes[0];
+                        break;
+                    }
+                    else if (txb.Text.ToLower() == codes[1].ToLower())
+                    {
+                        CartObject codeToCart = new CartObject("Great Deal", "25% Off!", totalCartPrice * (decimal)0.75 - totalCartPrice, 1, 0);
+                        currentCart.Add(codeToCart);
+                        CreateCartItemsGrid(codeToCart);
+                        totalCartPriceLabel.Content = totalCartPrice * (decimal)0.75;
+                        discountCodeBox.IsReadOnly = true;
+                        codeUsed = codes[1];
+                        break;
+                    }
+                    else if (txb.Text.ToLower() == codes[2].ToLower())
+                    {
+                        CartObject codeToCart = new CartObject("Awsome Deal", "50% Off!", totalCartPrice * (decimal)0.5 - totalCartPrice, 1, 0);
+                        currentCart.Add(codeToCart);
+                        CreateCartItemsGrid(codeToCart);
+                        totalCartPriceLabel.Content = totalCartPrice * (decimal)0.5;
+                        discountCodeBox.IsReadOnly = true;
+                        codeUsed = codes[2];
+                        break;
+                    }
+                    else if (i == codes.Length -1)
+                    {
+                        MessageBox.Show("I am sorry. That code was not valid.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        discountCodeBox.Text = "";
+                    }
+                }
+               
+            }
+        }
+
+        private void Checkout_Click(object sender, RoutedEventArgs e)
+        {
+            StringBuilder receipt = new StringBuilder("NAME\t\tDESCRIPTION\tQTY\tEACH\tTOTAL\n", 100);
+            foreach (var item in currentCart)
+            {
+                receipt.AppendLine($"{item.Name, -20}\t{item.Description, -15}\t{item.Quantity, 3}\t{item.PriceEach, -5}\t{item.Price}\n");
+            }
+            receipt.AppendLine("=================================================\n");
+            receipt.AppendLine($"\nTotal amount charged: {totalCartPrice,-10}\n");
+            receipt.AppendLine($"Code used: {codeUsed}");
+            MessageBox.Show(receipt.ToString(), "RECEIPT", MessageBoxButton.OK);
+            
+        }
+
+        private void LoadSavedCarts_Click(object sender, RoutedEventArgs e)
+        {
+            currentCart.Clear();
+            cartPanel.Children.Clear();
+            string[] lines = File.ReadAllLines(cartPath);
+            foreach  (string line in lines)
+            {
+                string[] splitlines = line.Split(';');
+                var createCartItem = new CartObject(splitlines[0], splitlines[1], decimal.Parse(splitlines[3]), int.Parse(splitlines[2]), decimal.Parse(splitlines[4]));
+                currentCart.Add(createCartItem);
+                codeUsed = splitlines[5];
+            }
+            totalCartPrice = 0;
+            foreach (var item in currentCart)
+            {
+                CreateCartItemsGrid(item);
+                totalCartPrice += item.Price;
+                if (item.Description == "10% Off!" || item.Description == "25% Off!" || item.Description == "50% Off!")
+                {
+                    discountCodeBox.IsReadOnly = true;
+                }
+            }
+            totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
+        }
+
+        private void SaveCurrentCart_Click(object sender, RoutedEventArgs e)
+        {
+            string savedCartTextfile = "";
+            foreach (CartObject item in currentCart)
+            {
+                savedCartTextfile += $"{item.Name};{item.Description};{item.Quantity};{item.Price};{item.PriceEach};{codeUsed}\n";
+            }
+            File.WriteAllText(cartPath, savedCartTextfile);
+            MessageBox.Show("Your Cart has been saved");
+            currentCart.Clear();
+            cartPanel.Children.Clear();
+            totalCartPriceLabel.Content = $"Total Cost: " + 0;
+            totalCartPrice = 0;
+            discountCodeBox.Text = "";
+
+        }
+
+        private void ClearCurrentCart_Click(object sender, RoutedEventArgs e)
+        {
+            currentCart.Clear();
+            cartPanel.Children.Clear();
+            totalCartPriceLabel.Content = $"Total Cost: " + 0;
+            discountCodeBox.Text = "";
+            totalCartPrice = 0;
+        }
+
         private void AddToCart_Click(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
             Product p = (Product)button.Tag;
             MessageBox.Show($"{p.Name} has been added to your cart");
 
-            Cart itemToCart = new Cart(p.Name, p.Description, p.Price, 1);
+            CartObject itemToCart = new CartObject(p.Name, p.Description, p.Price, 1, p.Price);
 
-            //cartItemQuantity = 1;
-
-            //if (!productNamesForComparison.Contains(itemToCart.Name))
+            if (!productNamesForComparison.Contains(itemToCart.Name))
             {
                 currentCart.Add(itemToCart);
                 productNamesForComparison.Add(itemToCart.Name);
@@ -333,25 +507,25 @@ namespace WPFStore
                 CreateCartItemsGrid(itemToCart);
             }
 
-
-            //else
+            else
             {
-                //int cartItemsIndexToAffect = productNamesForComparison.IndexOf(itemToCart.Name);
-                //Cart cartItemsGridToAffect = (Cart)delete.Tag;
-                //int cartItemsIndexToAffect = currentCart.IndexOf(cartItemsGridToAffect);
-                //cartItemQuantity += 1;
-                //cartPanel.Children.RemoveAt(cartItemsIndexToAffect);
-                //Cart correctQuantity = (Cart)quantity.Content;
-               //quantity.Content = cartItemQuantity;
+                int cartItemsIndexToAffect = productNamesForComparison.IndexOf(itemToCart.Name);
 
-               // price.Content = itemToCart.Price * cartItemQuantity;
-                //currentCart.Add(itemToCart);
-                //totalCartPrice += itemToCart.Price;
-                //totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
+                //Button button = (Button)sender;
+                //CartObject cartItem = (CartObject)butitemToCart
+                int indexToChange = currentCart.IndexOf(itemToCart);
+
+                totalCartPrice += itemToCart.Price / itemToCart.Quantity;
+                itemToCart.Price += itemToCart.Price / itemToCart.Quantity;
+                totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
+                cartItemPriceLabelList[cartItemsIndexToAffect].Content = itemToCart.Price;
+                itemToCart.Quantity += 1;
+                cartItemQuantiyLabelList[cartItemsIndexToAffect].Content = itemToCart.Quantity;
+
             }
         }
 
-        private void CreateCartItemsGrid(Cart itemToCart)
+        private void CreateCartItemsGrid(CartObject itemToCart)
         {
             cartItemsGrid = new Grid();
             cartItemsGrid.ShowGridLines = true;
@@ -393,6 +567,7 @@ namespace WPFStore
             };
             cartItemsGrid.Children.Add(price);
             Grid.SetColumn(price, 3);
+            cartItemPriceLabelList.Add(price);
 
             quantity = new Label
             {
@@ -404,6 +579,7 @@ namespace WPFStore
             };
             cartItemsGrid.Children.Add(quantity);
             Grid.SetColumn(quantity, 2);
+            cartItemQuantiyLabelList.Add(quantity);
 
             addCartItemQuantity = new Button
             {
@@ -445,7 +621,8 @@ namespace WPFStore
             deleteCartItem = new Button
             {
                 Content = trashcan,
-                Tag = itemToCart
+                Tag = itemToCart,
+                
             };
             cartItemsGrid.Children.Add(deleteCartItem);
             Grid.SetColumn(deleteCartItem, 6);
@@ -459,7 +636,7 @@ namespace WPFStore
         private void DeleteCartItem_Click(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
-            Cart cartItemToDelete = (Cart)button.Tag;
+            CartObject cartItemToDelete = (CartObject)button.Tag;
 
             int indexToDelete = currentCart.IndexOf(cartItemToDelete);
 
@@ -474,33 +651,30 @@ namespace WPFStore
         private void RemoveCartItemQuantity_Click(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
-            Cart cartItem2 = (Cart)button.Tag;
-            MessageBox.Show(cartItem2.Name);
+            CartObject cartItem2 = (CartObject)button.Tag;
             int indexToChange = currentCart.IndexOf(cartItem2);
 
             totalCartPrice -= cartItem2.Price / cartItem2.Quantity;
             cartItem2.Price -= cartItem2.Price / cartItem2.Quantity;
             totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
-            price.Content = cartItem2.Price;
+            cartItemPriceLabelList[indexToChange].Content = cartItem2.Price;
             cartItem2.Quantity -= 1;
-            quantity.Content = cartItem2.Quantity;
-            
-            foreach (var item in currentCart)
-            {
-                MessageBox.Show(price.Tag.ToString());
-            }
+            cartItemQuantiyLabelList[indexToChange].Content = cartItem2.Quantity;
+
         }
 
         private void AddCartItemQuantity_Click(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
-            Cart cartItem = (Cart)button.Tag;
+            CartObject cartItem = (CartObject)button.Tag;
+            int indexToChange = currentCart.IndexOf(cartItem);
+
             totalCartPrice += cartItem.Price / cartItem.Quantity;
             cartItem.Price += cartItem.Price / cartItem.Quantity;
             totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
-            price.Content = cartItem.Price;
+            cartItemPriceLabelList[indexToChange].Content = cartItem.Price;
             cartItem.Quantity += 1;
-            quantity.Content = cartItem.Quantity;
+            cartItemQuantiyLabelList[indexToChange].Content = cartItem.Quantity;
         }
 
         private void PixButton_Click(object sender, RoutedEventArgs e)
@@ -513,8 +687,8 @@ namespace WPFStore
 
         private void LoadProductList()
         {
-            string pathPRoducts = @"c:\Windows\Temp\VS_PS5products.txt";
-            string[] lines = File.ReadAllLines(pathPRoducts);
+            string pathProducts = @"c:\Windows\Temp\VS_PS5products.txt";
+            string[] lines = File.ReadAllLines(pathProducts);
             foreach (string line in lines)
             {
                 string[] splitlines = line.Split(';');
