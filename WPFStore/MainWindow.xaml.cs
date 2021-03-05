@@ -375,8 +375,7 @@ namespace WPFStore
 
             #endregion
         }
-        //methods used by STORE
-
+        //METHODS USED BY STORE
         // loads all available products from a file
         private void LoadProductList()
         {
@@ -429,8 +428,7 @@ namespace WPFStore
             }
         }
 
-        //methods used by CART
-
+        //METHODS USED BY CART
         // creates a new grid for the added item and puts it in the cart stackpanel
         private void CreateCartItemsGrid(CartObject itemToCart)
         {
@@ -556,13 +554,20 @@ namespace WPFStore
             CartObject cartItemSubtracted = (CartObject)button.Tag;
             int indexToChange = currentCartItemList.IndexOf(cartItemSubtracted);
 
-            totalCartPrice -= cartItemSubtracted.Price / cartItemSubtracted.Quantity;
-            cartItemSubtracted.Price -= cartItemSubtracted.Price / cartItemSubtracted.Quantity;
-            totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
-            cartItemPriceLabelList[indexToChange].Content = cartItemSubtracted.Price;
-            cartItemSubtracted.Quantity -= 1;
-            cartItemQuantiyLabelList[indexToChange].Content = cartItemSubtracted.Quantity;
-
+            // avoids the possibility to divide by zero
+            if (cartItemSubtracted.Quantity >= 2)
+            {
+                totalCartPrice -= cartItemSubtracted.Price / cartItemSubtracted.Quantity;
+                cartItemSubtracted.Price -= cartItemSubtracted.Price / cartItemSubtracted.Quantity;
+                totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
+                cartItemPriceLabelList[indexToChange].Content = cartItemSubtracted.Price;
+                cartItemSubtracted.Quantity -= 1;
+                cartItemQuantiyLabelList[indexToChange].Content = cartItemSubtracted.Quantity;
+            }
+            else
+            {
+                DeleteCartItemMethod(cartItemSubtracted, indexToChange);
+            }
         }
 
         // deletes an item from the current cart
@@ -573,7 +578,12 @@ namespace WPFStore
 
             int indexToDelete = currentCartItemList.IndexOf(cartItemToDelete);
 
-            // removes product from all lists so that it can be added again if needed
+            DeleteCartItemMethod(cartItemToDelete, indexToDelete);
+
+        }
+
+        private void DeleteCartItemMethod(CartObject cartItemToDelete, int indexToDelete)
+        {
             currentCartItemList.RemoveAt(indexToDelete);
             productNamesForComparisonList.RemoveAt(indexToDelete);
             cartPanel.Children.RemoveAt(indexToDelete);
