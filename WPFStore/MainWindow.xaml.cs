@@ -98,11 +98,10 @@ namespace WPFStore
             grid.ColumnDefinitions.Add(new ColumnDefinition());
             grid.ShowGridLines = false; //change to true if you want to view gridlines
 
-            //loads product-info into the list "products"
-            LoadProductList();
-
             #region STORE 
             //region that encompasses the store-part of the GUI
+
+            LoadProductList();
 
             Label storeHeader = new Label
             {
@@ -116,6 +115,52 @@ namespace WPFStore
             Grid.SetColumn(storeHeader, 0);
             Grid.SetRow(storeHeader, 0);
 
+            CreateProductGallery(grid);
+           
+            #endregion
+
+            #region CART
+            //region that encompasses the cart part of the GUI
+            Label cartHeader = new Label
+            {
+                Content = "Your Cart",
+                FontSize = 25,
+                FontWeight = FontWeights.Bold,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            grid.Children.Add(cartHeader);
+            Grid.SetColumn(cartHeader, 1);
+
+            CreateCartViewGrid(grid);
+
+            #endregion
+        }
+        //METHODS AND EVENT HANDLERS USED BY STORE
+        // loads all available products from a file
+        private void LoadProductList()
+        {
+            string pathProducts = @"c:\Windows\Temp\VS_PS5products.txt";
+
+            if (File.Exists(@"c:\Windows\Temp\VS_PS5products.txt"))
+            {
+                string[] lines = File.ReadAllLines(pathProducts);
+                foreach (string line in lines)
+                {
+                    string[] splitlines = line.Split(';');
+                    var createProduct = new Product(splitlines[0], splitlines[1], splitlines[2], decimal.Parse(splitlines[3]));
+                    products.Add(createProduct);
+                }
+            }
+            else 
+            {
+                MessageBox.Show("This file does not exist", "File Search Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+            }
+        }
+
+        // creates the image gallery for the store
+        private void CreateProductGallery(Grid grid)
+        {
             productGalleryPanel = new WrapPanel //wrapPanel for the productsgallery
             {
                 Margin = new Thickness(5)
@@ -134,7 +179,7 @@ namespace WPFStore
 
                 productGalleryPanel.Children.Add(productViewGrid);
 
-                ImageSource source = new BitmapImage(new Uri(@$"Photos\PS5{i+1}.png", UriKind.Relative));
+                ImageSource source = new BitmapImage(new Uri(@$"Photos\PS5{i + 1}.png", UriKind.Relative));
                 Image image = new Image
                 {
                     Source = source,
@@ -155,7 +200,7 @@ namespace WPFStore
                     Background = Brushes.Gray,
                     Tag = products[i]
                 };
-                
+
                 productViewGrid.Children.Add(productImageButton);
                 Grid.SetRow(productViewGrid, 0);
 
@@ -186,207 +231,6 @@ namespace WPFStore
                 productImageButton.Click += ProductImageButton_Click;
                 addItemToCart.Click += AddToCart_Click;
             }
-            #endregion
-
-            #region CART
-            //region that encompasses the cart part of the GUI
-            Label cartHeader = new Label
-            {
-                Content = "Your Cart",
-                FontSize = 25,
-                FontWeight = FontWeights.Bold,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-            grid.Children.Add(cartHeader);
-            Grid.SetColumn(cartHeader, 1);
-
-            Grid cartGrid = new Grid();
-            cartGrid.Margin = new Thickness(5);
-            cartGrid.ShowGridLines = true;
-            cartGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            cartGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star) });
-            cartGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            cartGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            cartGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            cartGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(5, GridUnitType.Star) });
-            cartGrid.ColumnDefinitions.Add(new ColumnDefinition());
-            cartGrid.ColumnDefinitions.Add(new ColumnDefinition());
-            cartGrid.ColumnDefinitions.Add(new ColumnDefinition());
-            cartGrid.ColumnDefinitions.Add(new ColumnDefinition());
-            cartGrid.ColumnDefinitions.Add(new ColumnDefinition());
-
-            grid.Children.Add(cartGrid);
-            Grid.SetColumn(cartGrid, 1);
-            Grid.SetRow(cartGrid, 1);
-
-            Label headerName = new Label
-            {
-                Content = "NAME",
-                FontWeight = FontWeights.Bold,
-                Background = Brushes.LightBlue
-            };
-            cartGrid.Children.Add(headerName);
-            Grid.SetColumn(headerName, 0);
-            Grid.SetRow(headerName, 0);
-
-            Label headerDescription = new Label
-            {
-                Content = "DESCRIPTION",
-                FontWeight = FontWeights.Bold,
-                Background = Brushes.LightBlue
-            };
-            cartGrid.Children.Add(headerDescription);
-            Grid.SetColumn(headerDescription, 1);
-            Grid.SetRow(headerDescription, 0);
-
-            Label headerPrice = new Label
-            {
-                Content = "QUANTITY",
-                FontWeight = FontWeights.Bold,
-                Background = Brushes.LightBlue
-            };
-            cartGrid.Children.Add(headerPrice);
-            Grid.SetColumn(headerPrice, 2);
-            Grid.SetRow(headerPrice, 0);
-
-            Label headerQuantity = new Label
-            {
-                Content = "PRICE",
-                FontWeight = FontWeights.Bold,
-                Background = Brushes.LightBlue
-            };
-            cartGrid.Children.Add(headerQuantity);
-            Grid.SetColumn(headerQuantity, 3);
-            Grid.SetColumnSpan(headerQuantity, 2);
-            Grid.SetRow(headerQuantity, 0);
-
-            cartPanel = new StackPanel
-            {
-                Orientation = Orientation.Vertical
-                
-            };
-            cartGrid.Children.Add(cartPanel);
-            Grid.SetColumnSpan(cartPanel, 5);
-            Grid.SetRow(cartPanel, 1);
-
-            Label discountCodeLabel = new Label
-            {
-                Content = "Got a code? Enter it here.",
-                FontSize = 15,
-                FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Left
-            };
-            cartGrid.Children.Add(discountCodeLabel);
-            Grid.SetColumnSpan(discountCodeLabel, 2);
-            Grid.SetColumn(discountCodeLabel, 0);
-            Grid.SetRow(discountCodeLabel, 2);
-
-            discountCodeBox = new TextBox
-            {
-                FontSize = 15,
-                FontWeight = FontWeights.Bold,
-                Width = 250,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                BorderBrush = Brushes.Gray,
-                BorderThickness = new Thickness(2),
-                //CornerRadius = new CornerRadius(15)
-            };
-            cartGrid.Children.Add(discountCodeBox);
-            Grid.SetColumnSpan(discountCodeBox, 3);
-            Grid.SetColumn(discountCodeBox, 2);
-            Grid.SetRow(discountCodeBox, 2);
-
-            discountCodeBox.KeyDown += DiscountCodeBox_KeyDown;
-
-
-            totalCartPriceLabel = new Label
-            {
-                Content = $"Total Cost: {totalCartPrice}",
-                FontSize = 15,
-                FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Left
-            };
-            cartGrid.Children.Add(totalCartPriceLabel);
-            Grid.SetColumnSpan(totalCartPriceLabel, 3);
-            Grid.SetColumn(totalCartPriceLabel, 3);
-            Grid.SetRow(totalCartPriceLabel, 3);
-
-            loadSavedCarts = new Button
-            {
-                Content = "Load Cart",
-                FontSize = 15,
-                FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            cartGrid.Children.Add(loadSavedCarts);
-            Grid.SetColumn(loadSavedCarts, 0);
-            Grid.SetRow(loadSavedCarts, 4);
-
-            loadSavedCarts.Click += LoadSavedCarts_Click;
-
-            saveCurrentCart = new Button
-            {
-                Content = "Save Cart",
-                FontSize = 15,
-                FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            cartGrid.Children.Add(saveCurrentCart);
-            Grid.SetColumn(saveCurrentCart, 1);
-            Grid.SetRow(saveCurrentCart, 4);
-
-            saveCurrentCart.Click += SaveCurrentCart_Click;
-
-            clearCurrentCart = new Button
-            {
-                Content = "Clear Cart",
-                FontSize = 15,
-                FontWeight = FontWeights.Bold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            cartGrid.Children.Add(clearCurrentCart);
-            Grid.SetColumn(clearCurrentCart, 2);
-            Grid.SetRow(clearCurrentCart, 4);
-
-            clearCurrentCart.Click += ClearCurrentCart_Click;
-
-            checkout = new Button
-            {
-                Content = "CHECKOUT",
-                FontSize = 15,
-                FontWeight = FontWeights.Bold,
-                Width = 150,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            cartGrid.Children.Add(checkout);
-            Grid.SetColumn(checkout, 3);
-            Grid.SetColumnSpan(checkout, 2);
-            Grid.SetRow(checkout, 4);
-
-            checkout.Click += Checkout_Click;
-
-
-
-
-            #endregion
-        }
-        //METHODS USED BY STORE
-        // loads all available products from a file
-        private void LoadProductList()
-        {
-            string pathProducts = @"c:\Windows\Temp\VS_PS5products.txt";
-            string[] lines = File.ReadAllLines(pathProducts);
-            foreach (string line in lines)
-            {
-                string[] splitlines = line.Split(';');
-                var createProduct = new Product(splitlines[0], splitlines[1], splitlines[2], decimal.Parse(splitlines[3]));
-                products.Add(createProduct);
-            }
         }
 
         // let's the user see information about product when the product picture is clicked
@@ -407,7 +251,7 @@ namespace WPFStore
 
             CartObject cartItemAdded = new CartObject(p.Name, p.Description, p.Price, 1, p.Price);
 
-            if (!productNamesForComparisonList.Contains(cartItemAdded.Name))
+            if (!productNamesForComparisonList.Contains(cartItemAdded.Name)) //If the product doesn't exist - add it to cart
             {
                 currentCartItemList.Add(cartItemAdded);
                 productNamesForComparisonList.Add(cartItemAdded.Name);
@@ -415,21 +259,208 @@ namespace WPFStore
                 totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
                 CreateCartItemsGrid(cartItemAdded);
             }
-            else
+            else // if it does adjust quantity, price and totalprice in cart
             {
                 int indexToChange = productNamesForComparisonList.IndexOf(cartItemAdded.Name);
-
-                totalCartPrice += cartItemAdded.Price / cartItemAdded.Quantity;
-                cartItemAdded.Price += cartItemAdded.Price / cartItemAdded.Quantity;
-                totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
-                cartItemPriceLabelList[indexToChange].Content = cartItemAdded.Price;
-                cartItemAdded.Quantity += 1;
-                cartItemQuantiyLabelList[indexToChange].Content = cartItemAdded.Quantity;
+                cartItemAdded = currentCartItemList[indexToChange];
+                UpdateItemQuantityPriceAndTotalCartPrice(cartItemAdded, indexToChange);
             }
         }
 
-        //METHODS USED BY CART
-        // creates a new grid for the added item and puts it in the cart stackpanel
+        //====================================================================================================
+
+        // METHOD USED BY BOTH STORE AND CART
+        private void UpdateItemQuantityPriceAndTotalCartPrice(CartObject cartItemAdded, int indexToChange)
+        {
+            totalCartPrice = CalculateTotalCartPriceWhenAddingProduct(cartItemAdded, totalCartPrice);
+            cartItemAdded.Price += cartItemAdded.PriceEach;
+            totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
+            cartItemPriceLabelList[indexToChange].Content = cartItemAdded.Price;
+            cartItemAdded.Quantity += 1;
+            cartItemQuantiyLabelList[indexToChange].Content = cartItemAdded.Quantity;
+        }
+        // broken out for testing
+        public static decimal CalculateTotalCartPriceWhenAddingProduct(CartObject cartItemAdded, decimal totalCartPrice)
+        {
+            totalCartPrice += cartItemAdded.PriceEach;
+            return totalCartPrice;
+        }
+
+        //=====================================================================================================
+
+        //METHODS AND EVENTS USED BY CART
+        // creates the cart view
+        private void CreateCartViewGrid(Grid grid)
+        {
+            Grid cartViewGrid = new Grid();
+            cartViewGrid.Margin = new Thickness(5);
+            cartViewGrid.ShowGridLines = true;
+            cartViewGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            cartViewGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star) });
+            cartViewGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            cartViewGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            cartViewGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            cartViewGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(5, GridUnitType.Star) });
+            cartViewGrid.ColumnDefinitions.Add(new ColumnDefinition());
+            cartViewGrid.ColumnDefinitions.Add(new ColumnDefinition());
+            cartViewGrid.ColumnDefinitions.Add(new ColumnDefinition());
+            cartViewGrid.ColumnDefinitions.Add(new ColumnDefinition());
+            cartViewGrid.ColumnDefinitions.Add(new ColumnDefinition());
+
+            grid.Children.Add(cartViewGrid);
+            Grid.SetColumn(cartViewGrid, 1);
+            Grid.SetRow(cartViewGrid, 1);
+
+            Label headerName = new Label
+            {
+                Content = "NAME",
+                FontWeight = FontWeights.Bold,
+                Background = Brushes.LightBlue
+            };
+            cartViewGrid.Children.Add(headerName);
+            Grid.SetColumn(headerName, 0);
+            Grid.SetRow(headerName, 0);
+
+            Label headerDescription = new Label
+            {
+                Content = "DESCRIPTION",
+                FontWeight = FontWeights.Bold,
+                Background = Brushes.LightBlue
+            };
+            cartViewGrid.Children.Add(headerDescription);
+            Grid.SetColumn(headerDescription, 1);
+            Grid.SetRow(headerDescription, 0);
+
+            Label headerPrice = new Label
+            {
+                Content = "QUANTITY",
+                FontWeight = FontWeights.Bold,
+                Background = Brushes.LightBlue
+            };
+            cartViewGrid.Children.Add(headerPrice);
+            Grid.SetColumn(headerPrice, 2);
+            Grid.SetRow(headerPrice, 0);
+
+            Label headerQuantity = new Label
+            {
+                Content = "PRICE",
+                FontWeight = FontWeights.Bold,
+                Background = Brushes.LightBlue
+            };
+            cartViewGrid.Children.Add(headerQuantity);
+            Grid.SetColumn(headerQuantity, 3);
+            Grid.SetColumnSpan(headerQuantity, 2);
+            Grid.SetRow(headerQuantity, 0);
+
+            cartPanel = new StackPanel
+            {
+                Orientation = Orientation.Vertical
+
+            };
+            cartViewGrid.Children.Add(cartPanel);
+            Grid.SetColumnSpan(cartPanel, 5);
+            Grid.SetRow(cartPanel, 1);
+
+            Label discountCodeLabel = new Label
+            {
+                Content = "Got a code? Enter it here.",
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+            cartViewGrid.Children.Add(discountCodeLabel);
+            Grid.SetColumnSpan(discountCodeLabel, 2);
+            Grid.SetColumn(discountCodeLabel, 0);
+            Grid.SetRow(discountCodeLabel, 2);
+
+            discountCodeBox = new TextBox
+            {
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                Width = 250,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                BorderBrush = Brushes.Gray,
+                BorderThickness = new Thickness(2),
+            };
+            cartViewGrid.Children.Add(discountCodeBox);
+            Grid.SetColumnSpan(discountCodeBox, 3);
+            Grid.SetColumn(discountCodeBox, 2);
+            Grid.SetRow(discountCodeBox, 2);
+
+            discountCodeBox.KeyDown += DiscountCodeBox_KeyDown;
+
+
+            totalCartPriceLabel = new Label
+            {
+                Content = $"Total Cost: {totalCartPrice}",
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+            cartViewGrid.Children.Add(totalCartPriceLabel);
+            Grid.SetColumnSpan(totalCartPriceLabel, 3);
+            Grid.SetColumn(totalCartPriceLabel, 3);
+            Grid.SetRow(totalCartPriceLabel, 3);
+
+            loadSavedCarts = new Button
+            {
+                Content = "Load Cart",
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            cartViewGrid.Children.Add(loadSavedCarts);
+            Grid.SetColumn(loadSavedCarts, 0);
+            Grid.SetRow(loadSavedCarts, 4);
+
+            loadSavedCarts.Click += LoadSavedCarts_Click;
+
+            saveCurrentCart = new Button
+            {
+                Content = "Save Cart",
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            cartViewGrid.Children.Add(saveCurrentCart);
+            Grid.SetColumn(saveCurrentCart, 1);
+            Grid.SetRow(saveCurrentCart, 4);
+
+            saveCurrentCart.Click += SaveCurrentCart_Click;
+
+            clearCurrentCart = new Button
+            {
+                Content = "Clear Cart",
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            cartViewGrid.Children.Add(clearCurrentCart);
+            Grid.SetColumn(clearCurrentCart, 2);
+            Grid.SetRow(clearCurrentCart, 4);
+
+            clearCurrentCart.Click += ClearCurrentCart_Click;
+
+            checkout = new Button
+            {
+                Content = "CHECKOUT",
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                Width = 150,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            cartViewGrid.Children.Add(checkout);
+            Grid.SetColumn(checkout, 3);
+            Grid.SetColumnSpan(checkout, 2);
+            Grid.SetRow(checkout, 4);
+
+            checkout.Click += Checkout_Click;
+        }
+        // creates a new grid for the added item and puts it in the stack panel in the cart view grid
         private void CreateCartItemsGrid(CartObject itemToCart)
         {
             cartItemsGrid = new Grid();
@@ -538,13 +569,13 @@ namespace WPFStore
             Button button = (Button)sender;
             CartObject cartItemAdded = (CartObject)button.Tag;
             int indexToChange = currentCartItemList.IndexOf(cartItemAdded);
-
-            totalCartPrice += cartItemAdded.Price / cartItemAdded.Quantity;
-            cartItemAdded.Price += cartItemAdded.Price / cartItemAdded.Quantity;
-            totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
-            cartItemPriceLabelList[indexToChange].Content = cartItemAdded.Price;
-            cartItemAdded.Quantity += 1;
-            cartItemQuantiyLabelList[indexToChange].Content = cartItemAdded.Quantity;
+            UpdateItemQuantityPriceAndTotalCartPrice(cartItemAdded, indexToChange);
+            //totalCartPrice += cartItemAdded.Price / cartItemAdded.Quantity;
+            //cartItemAdded.Price += cartItemAdded.Price / cartItemAdded.Quantity;
+            //totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
+            //cartItemPriceLabelList[indexToChange].Content = cartItemAdded.Price;
+            //cartItemAdded.Quantity += 1;
+            //cartItemQuantiyLabelList[indexToChange].Content = cartItemAdded.Quantity;
         }
 
         // reduces quantity of a specific item in the current cart
@@ -557,8 +588,8 @@ namespace WPFStore
             // avoids the possibility to divide by zero
             if (cartItemSubtracted.Quantity >= 2)
             {
-                totalCartPrice -= cartItemSubtracted.Price / cartItemSubtracted.Quantity;
-                cartItemSubtracted.Price -= cartItemSubtracted.Price / cartItemSubtracted.Quantity;
+                totalCartPrice -= cartItemSubtracted.PriceEach;
+                cartItemSubtracted.Price -= cartItemSubtracted.PriceEach;
                 totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
                 cartItemPriceLabelList[indexToChange].Content = cartItemSubtracted.Price;
                 cartItemSubtracted.Quantity -= 1;
@@ -680,11 +711,12 @@ namespace WPFStore
             }
             File.WriteAllText(cartPathSaveLoad, savedCartTextfile);
             MessageBox.Show("Your Cart has been saved");
-            currentCartItemList.Clear();
-            cartPanel.Children.Clear();
-            totalCartPriceLabel.Content = $"Total Cost: " + 0;
-            totalCartPrice = 0;
-            discountCodeBox.Text = "";
+            ClearCart();
+            //currentCartItemList.Clear();
+            //cartPanel.Children.Clear();
+            //totalCartPriceLabel.Content = $"Total Cost: " + 0;
+            //totalCartPrice = 0;
+            //discountCodeBox.Text = "";
 
         }
 
@@ -726,10 +758,12 @@ namespace WPFStore
             ClearCart();
         }
 
+        //Just for trying out testing. No other function
+        public static int AddNumbers(int a, int b)
+        {
+            int result = a + b;
+            return result;
 
-
-
-
-
+        }
     }
 }
