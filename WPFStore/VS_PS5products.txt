@@ -1,0 +1,9 @@
+﻿PS5001;PlayStation 5;Console;6000;true
+PS5002;DualSense;Controller;800;true
+PS5003;CloudStinger;Headset;850;true
+PS5004;Pulse3D;Headset;1200;true
+PS5005;Miles Morales;Game;550;true
+PS5006;Ratche & Clank;Game;800;true
+PS5007;Resident Evil;Game;600;true
+PS5008;Valhalla;Game;700;true
+PS5009;WRC9;Game;600;true

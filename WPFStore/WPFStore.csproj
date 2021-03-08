@@ -7,59 +7,67 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Photos\PS51.png" />
-    <None Remove="Photos\PS510.png" />
-    <None Remove="Photos\PS511.png" />
-    <None Remove="Photos\PS512.png" />
-    <None Remove="Photos\PS52.png" />
-    <None Remove="Photos\PS53.png" />
-    <None Remove="Photos\PS54.png" />
-    <None Remove="Photos\PS55.png" />
-    <None Remove="Photos\PS56.png" />
-    <None Remove="Photos\PS57.png" />
-    <None Remove="Photos\PS58.png" />
-    <None Remove="Photos\PS59.png" />
+    <None Remove="Photos\PS5CO01.png" />
+    <None Remove="Photos\PS5GA01.png" />
+    <None Remove="Photos\PS5GA02.png" />
+    <None Remove="Photos\PS5GA03.png" />
+    <None Remove="Photos\PS5GA04.png" />
+    <None Remove="Photos\PS5GA05.png" />
+    <None Remove="Photos\PS5GAXX1.png" />
+    <None Remove="Photos\PS5GAXX2.png" />
+    <None Remove="Photos\PS5GAXX3.png" />
+    <None Remove="Photos\PS5HS01.png" />
+    <None Remove="Photos\PS5HS02.png" />
+    <None Remove="Photos\PS5RC01.png" />
     <None Remove="Photos\Trashcan.png" />
+    <None Remove="VS_PS5DiscountCodes.txt" />
+    <None Remove="VS_PS5products.txt" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Photos\PS51.png">
+    <Content Include="Photos\PS5CO01.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Photos\PS510.png">
+    <Content Include="Photos\PS5GAXX3.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Photos\PS511.png">
+    <Content Include="Photos\PS5GAXX2.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Photos\PS512.png">
+    <Content Include="Photos\PS5GAXX1.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Photos\PS52.png">
+    <Content Include="Photos\PS5RC01.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Photos\PS53.png">
+    <Content Include="Photos\PS5HS01.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Photos\PS54.png">
+    <Content Include="Photos\PS5HS02.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Photos\PS55.png">
+    <Content Include="Photos\PS5GA01.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Photos\PS56.png">
+    <Content Include="Photos\PS5GA02.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Photos\PS57.png">
+    <Content Include="Photos\PS5GA03.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Photos\PS58.png">
+    <Content Include="Photos\PS5GA04.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Photos\PS59.png">
+    <Content Include="Photos\PS5GA05.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Photos\Trashcan.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="VS_PS5DiscountCodes.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="VS_PS5products.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

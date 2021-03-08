@@ -1,0 +1,3 @@
+﻿GoodDeal;10% Off!;0.9;1;0
+GreatDeal;25% Off!;0.75;1;0
+AwsomeDeal;50% Off!;0.5;1;0

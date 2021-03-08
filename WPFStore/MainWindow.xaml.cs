@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -17,13 +19,16 @@ namespace WPFStore
             public string Name { get; set; }
             public string Description { get; set; }
             public decimal Price { get; set; }
+            public bool IsActive { get; set; }
 
-            public Product(string id, string name, string description, decimal price)
+
+            public Product(string id, string name, string description, decimal price, bool isActive)
             {
                 ID = id;
                 Name = name;
                 Description = description;
                 Price = price;
+                IsActive = isActive;
             }
         }
         public class CartObject //Data for cartItems and cart
@@ -60,10 +65,11 @@ namespace WPFStore
         public Grid cartItemsGrid; //used in CART. Grid that build the pseudo-datagrid of the cart
         public Label quantity, price, totalCartPriceLabel; //used in cartGrid
         public List<CartObject> currentCartItemList = new List<CartObject>();
+        public List<CartObject> discountCodesList = new List<CartObject>();
         public List<string> productNamesForComparisonList = new List<string>(); //used in if/else to see if the cart already contains the product
         public StackPanel cartPanel; //used in CART. Container for above grids.
         public string cartPathSaveLoad = @"c:\Windows\Temp\VS_PS5Cart.txt"; //used for loading and saving the current cart
-        public string codeUsed;
+        public string codeUsed = "";
         public TextBox discountCodeBox;
       
         
@@ -76,6 +82,8 @@ namespace WPFStore
 
         private void Start()
         {
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+
             // Window options
             Title = "School Project";
             Width = 1050;
@@ -98,14 +106,17 @@ namespace WPFStore
             grid.ColumnDefinitions.Add(new ColumnDefinition());
             grid.ShowGridLines = false; //change to true if you want to view gridlines
 
+            Closing += MainWindow_Closing;
+
             #region STORE 
             //region that encompasses the store-part of the GUI
 
-            LoadProductList();
+            LoadProductList(@"VS_PS5products.txt");
+            //@"c:\Windows\Temp\VS_PS5products.txt"
 
             Label storeHeader = new Label
             {
-                Content = "Welcome to the Ps5 Store",
+                Content = "Welcome to the PS5 Store",
                 FontSize = 25,
                 FontWeight = FontWeights.Bold,
                 VerticalContentAlignment = VerticalAlignment.Center,
@@ -133,28 +144,34 @@ namespace WPFStore
             Grid.SetColumn(cartHeader, 1);
 
             CreateCartViewGrid(grid);
+            LoadDiscountCodes(@"VS_PS5DiscountCodes.txt");
 
             #endregion
         }
         //METHODS AND EVENT HANDLERS USED BY STORE
         // loads all available products from a file
-        private void LoadProductList()
+        private void LoadProductList(string path)
         {
-            string pathProducts = @"c:\Windows\Temp\VS_PS5products.txt";
-
-            if (File.Exists(@"c:\Windows\Temp\VS_PS5products.txt"))
+            string tempPath = @"c:\Windows\Temp\VS_PS5products.txt";
+            if (File.Exists(tempPath))
             {
-                string[] lines = File.ReadAllLines(pathProducts);
+                string[] lines = File.ReadAllLines(tempPath);
                 foreach (string line in lines)
                 {
                     string[] splitlines = line.Split(';');
-                    var createProduct = new Product(splitlines[0], splitlines[1], splitlines[2], decimal.Parse(splitlines[3]));
+                    var createProduct = new Product(splitlines[0], splitlines[1], splitlines[2], decimal.Parse(splitlines[3]), bool.Parse(splitlines[4]));
                     products.Add(createProduct);
                 }
             }
             else 
             {
-                MessageBox.Show("This file does not exist", "File Search Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                string[] lines = File.ReadAllLines(path);
+                foreach (string line in lines)
+                {
+                    string[] splitlines = line.Split(';');
+                    var createProduct = new Product(splitlines[0], splitlines[1], splitlines[2], decimal.Parse(splitlines[3]), bool.Parse(splitlines[4]));
+                    products.Add(createProduct);
+                }
             }
         }
 
@@ -179,17 +196,7 @@ namespace WPFStore
 
                 productGalleryPanel.Children.Add(productViewGrid);
 
-                ImageSource source = new BitmapImage(new Uri(@$"Photos\PS5{i + 1}.png", UriKind.Relative));
-                Image image = new Image
-                {
-                    Source = source,
-                    Width = 150,
-                    Height = 170,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    Margin = new Thickness(5)
-                };
-                RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+                Image image = LoadProductImage(i);
 
                 productImageButton = new Button
                 {
@@ -233,6 +240,43 @@ namespace WPFStore
             }
         }
 
+        private Image LoadProductImage(int i)
+        {
+            if (!Directory.Exists(@"c:\Windows\Temp\VS_PS5Photos"))
+            {
+                ImageSource source = new BitmapImage(new Uri(@$"Photos\{products[i].ID}.png", UriKind.Relative));
+                Image image = new Image
+                {
+                    Source = source,
+                    Width = 150,
+                    Height = 170,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(5)
+                };
+                RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+
+                return image;
+            }
+            else
+            {
+                ImageSource source = new BitmapImage(new Uri($@"c:\Windows\Temp\VS_PS5Photos\{products[i].ID}.png", UriKind.RelativeOrAbsolute));
+                Image image = new Image
+                {
+                    Source = source,
+                    Width = 150,
+                    Height = 170,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(5)
+                };
+                RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+
+                return image;
+            }
+           
+        }
+
         // let's the user see information about product when the product picture is clicked
         private void ProductImageButton_Click(object sender, RoutedEventArgs e)
         {
@@ -266,6 +310,36 @@ namespace WPFStore
                 UpdateItemQuantityPriceAndTotalCartPrice(cartItemAdded, indexToChange);
             }
         }
+       
+        // Creates a textfile in TEMP with the productlist
+        private void SaveProductListToFile()
+        {
+            string saveProductString = "";
+            foreach (Product p in products)
+            {
+                saveProductString += $"{p.ID};{p.Name};{p.Description};{p.Price};{p.IsActive}\n";
+            }
+            File.WriteAllText(@"c:\Windows\Temp\VS_PS5products.txt", saveProductString);
+        }
+
+        // Saves photos in project to a new folder in TEMP
+        private void SavePhotosToFile()
+        {
+            if (!Directory.Exists(@"c:\Windows\Temp\VS_PS5Photos"))
+            {
+                Directory.CreateDirectory(@"c:\Windows\Temp\VS_PS5Photos");
+                string[] fileEntries = Directory.GetFiles(@"Photos\");
+                foreach (string source in fileEntries)
+                {
+                    string fileName = source.Substring(7);
+                    string destination = $@"c:\Windows\Temp\VS_PS5Photos\{fileName}";
+                    File.Copy(source, destination);
+                }
+            }
+            else { }
+
+
+        }
 
         //====================================================================================================
 
@@ -286,6 +360,14 @@ namespace WPFStore
             return totalCartPrice;
         }
 
+        //Saves Data to files in TEMP when closing the app
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            SaveProductListToFile();
+            SaveCodeListToFile();
+            SavePhotosToFile();
+        }
+
         //=====================================================================================================
 
         //METHODS AND EVENTS USED BY CART
@@ -294,7 +376,7 @@ namespace WPFStore
         {
             Grid cartViewGrid = new Grid();
             cartViewGrid.Margin = new Thickness(5);
-            cartViewGrid.ShowGridLines = true;
+            cartViewGrid.ShowGridLines = false;
             cartViewGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             cartViewGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(2, GridUnitType.Star) });
             cartViewGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -406,6 +488,7 @@ namespace WPFStore
             {
                 Content = "Load Cart",
                 FontSize = 15,
+                Width = 90,
                 FontWeight = FontWeights.Bold,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
@@ -420,6 +503,7 @@ namespace WPFStore
             {
                 Content = "Save Cart",
                 FontSize = 15,
+                Width = 90,
                 FontWeight = FontWeights.Bold,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
@@ -434,6 +518,7 @@ namespace WPFStore
             {
                 Content = "Clear Cart",
                 FontSize = 15,
+                Width = 90,
                 FontWeight = FontWeights.Bold,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
@@ -464,7 +549,7 @@ namespace WPFStore
         private void CreateCartItemsGrid(CartObject itemToCart)
         {
             cartItemsGrid = new Grid();
-            cartItemsGrid.ShowGridLines = true;
+            cartItemsGrid.ShowGridLines = false;
             cartItemsGrid.RowDefinitions.Add(new RowDefinition());
             cartItemsGrid.ColumnDefinitions.Add(new ColumnDefinition());
             cartItemsGrid.ColumnDefinitions.Add(new ColumnDefinition());
@@ -624,54 +709,60 @@ namespace WPFStore
             totalCartPriceLabel.Content = $"Total Cost: {totalCartPrice}";
         }
 
+        public void LoadDiscountCodes(string path)
+        {
+            string tempPath = @"c:\Windows\Temp\VS_PS5products.txt";
+            if (File.Exists(tempPath))
+            {
+                string[] lines = File.ReadAllLines(tempPath);
+                foreach (string line in lines)
+                {
+                    string[] splitlines = line.Split(';');
+                    CartObject createCode = new CartObject(splitlines[0], splitlines[1], decimal.Parse(splitlines[2]), int.Parse(splitlines[3]), decimal.Parse(splitlines[4]));
+                    discountCodesList.Add(createCode);
+                }
+            }
+            else if (!File.Exists(tempPath)
+            {
+                string[] lines = File.ReadAllLines(path);
+                foreach (string line in lines)
+                {
+                    string[] splitlines = line.Split(';');
+                    CartObject createCode = new CartObject(splitlines[0], splitlines[1], decimal.Parse(splitlines[2]), int.Parse(splitlines[3]), decimal.Parse(splitlines[4]));
+                    discountCodesList.Add(createCode);
+                }
+            }
+            else
+            {
+                MessageBox.Show("This file does not exist", "File Search Error", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+            }
+        }
+
         //handles actions related to the discount textbox
         private void DiscountCodeBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            string codesPath = @"c:\Windows\Temp\VS_PS5DiscountCodes.txt";
-            string[] codes = File.ReadAllLines(codesPath);
             TextBox txb = (TextBox)sender;
 
             if (e.Key == System.Windows.Input.Key.Enter && sender is TextBox)
             {
-                for (int i = 0; i < codes.Length; i++)
+                foreach (CartObject code in discountCodesList)
                 {
-                    if (txb.Text.ToLower() == codes[0].ToLower())
+                    if (txb.Text.ToLower() == code.Name.ToLower())
                     {
-                        CartObject codeToCart = new CartObject("Good Deal", "10% Off!", totalCartPrice * (decimal)0.9 - totalCartPrice, 1, 0);
-                        currentCartItemList.Add(codeToCart);
-                        CreateCartItemsGrid(codeToCart);
-                        totalCartPriceLabel.Content = totalCartPrice * (decimal)0.9;
+                        totalCartPriceLabel.Content = totalCartPrice * code.Price;
+                        code.Price = totalCartPrice * code.Price - totalCartPrice;
+                        currentCartItemList.Add(code);
+                        CreateCartItemsGrid(code);
                         discountCodeBox.IsReadOnly = true;
-                        codeUsed = codes[0];
+                        codeUsed = code.Name;
                         break;
-                    }
-                    else if (txb.Text.ToLower() == codes[1].ToLower())
-                    {
-                        CartObject codeToCart = new CartObject("Great Deal", "25% Off!", totalCartPrice * (decimal)0.75 - totalCartPrice, 1, 0);
-                        currentCartItemList.Add(codeToCart);
-                        CreateCartItemsGrid(codeToCart);
-                        totalCartPriceLabel.Content = totalCartPrice * (decimal)0.75;
-                        discountCodeBox.IsReadOnly = true;
-                        codeUsed = codes[1];
-                        break;
-                    }
-                    else if (txb.Text.ToLower() == codes[2].ToLower())
-                    {
-                        CartObject codeToCart = new CartObject("Awsome Deal", "50% Off!", totalCartPrice * (decimal)0.5 - totalCartPrice, 1, 0);
-                        currentCartItemList.Add(codeToCart);
-                        CreateCartItemsGrid(codeToCart);
-                        totalCartPriceLabel.Content = totalCartPrice * (decimal)0.5;
-                        discountCodeBox.IsReadOnly = true;
-                        codeUsed = codes[2];
-                        break;
-                    }
-                    else if (i == codes.Length - 1)
-                    {
-                        MessageBox.Show("I am sorry. That code was not valid.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        discountCodeBox.Text = "";
                     }
                 }
-
+                if (codeUsed == "")
+                {
+                    MessageBox.Show("I am sorry. That code was not valid.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    discountCodeBox.Text = "";
+                }
             }
         }
 
@@ -712,12 +803,6 @@ namespace WPFStore
             File.WriteAllText(cartPathSaveLoad, savedCartTextfile);
             MessageBox.Show("Your Cart has been saved");
             ClearCart();
-            //currentCartItemList.Clear();
-            //cartPanel.Children.Clear();
-            //totalCartPriceLabel.Content = $"Total Cost: " + 0;
-            //totalCartPrice = 0;
-            //discountCodeBox.Text = "";
-
         }
 
         //handles action related to the clear cart button
@@ -756,6 +841,17 @@ namespace WPFStore
             receipt.AppendLine($"Code used: {codeUsed}");
             MessageBox.Show(receipt.ToString(), "RECEIPT", MessageBoxButton.OK);
             ClearCart();
+        }
+
+        // Saves list with discount codes to a new file in TEMP
+        private void SaveCodeListToFile()
+        {
+            string saveCodeString = "";
+            foreach (CartObject c in discountCodesList)
+            {
+                saveCodeString += $"{c.Name};{c.Description};{c.Price};{c.Quantity};{c.PriceEach}\n";
+            }
+            File.WriteAllText(@"c:\Windows\Temp\VS_PS5DiscountCodes.txt", saveCodeString);
         }
 
         //Just for trying out testing. No other function
